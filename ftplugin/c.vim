@@ -2897,3 +2897,5 @@ endif " has("autocmd")
 "
 "=====================================================================================
 " vim: tabstop=2 shiftwidth=2 foldmethod=marker
+" renyong add 2016.07.28; see vim.txt
+set filetype=cpp

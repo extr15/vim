@@ -1,16 +1,21 @@
-set sw=4
-set ts=4
-set et
 "set smarttab
 "set smartindent
-set lbr
+" set lbr ；linebreak,应该关闭，否则中文显示时折行不会在一句话的内部，只会在空格的地方断开
 set fo+=mB
 set sm
 set selection=inclusive
 set wildmenu
 set mousemodel=popup
 " renyong
-set fdm=marker
+set fdm=syntax
+au FileType text set fdm=marker fo+=mM
+" help formatoptions 有
+" m：在多字节字符处可以折行，对中文特别有效（否则只在空白字符处折行）； --  这应该指的是输入模式下
+" M：在拼接两行时（重新格式化，或者是手工使用“J”命令），如果前一行的结尾或后一行的开头是多字节字符，则不插入空格，非常适合中文
+" 我想解决刚打开cpp文件时c-support有些功能没有调用的bug，然而下面的语句并没有作用,参考vim.txt 2016.07.28
+au FileType cpp source ~/.vim/ftplugin/c.vim
+au BufNewFile,BufRead *.{cpp,c,h,hpp,cc} set filetype=cpp
+
 let mapleader = ","
 let g:mapleader = ","
 nmap <leader>w :w!<cr>
@@ -21,6 +26,8 @@ map <C-F12> <esc>:!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .<cr><cr>
 " insert current time
 "imap <F3> <C-R>=strftime("%Y%m%d %H:%M")<CR>
 imap <F3> <C-R>=strftime("%Y.%m.%d")<CR>
+" 让vimrc配置变更在vimrc中立即生效
+" autocmd BufWritePost $MYVIMRC source $MYVIMRC
 
 au FileType php setlocal dict+=~/.vim/dict/php_funclist.dict
 au FileType css setlocal dict+=~/.vim/dict/css.dict
@@ -71,11 +78,16 @@ endif
 " 自动缩进
 set autoindent
 set cindent
+" 防止insert模式下 #被自动移到行首，去掉缩进
+set nosmartindent
+set cinkeys-=0#
+set indentkeys-=0#
+
 " Tab键的宽度
-set tabstop=4
-" 统一缩进为4
-set softtabstop=4
-set shiftwidth=4
+set tabstop=2
+" 统一缩进为2
+set softtabstop=2
+set shiftwidth=2
 " 使用空格代替制表符
 set expandtab
 " 在行和段开始处使用制表符
@@ -172,6 +184,7 @@ func SetTitle()
 	endif
 	"新建文件后，自动定位到文件末尾
 endfunc 
+
 autocmd BufNewFile * normal G
 
 

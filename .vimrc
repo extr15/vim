@@ -1,3 +1,5 @@
+":finish
+
 "set smarttab
 "set smartindent
 " set lbr ；linebreak,应该关闭，否则中文显示时折行不会在一句话的内部，只会在空格的地方断开
@@ -9,17 +11,30 @@ set mousemodel=popup
 " renyong
 set fdm=syntax
 au FileType text set fdm=marker fo+=mM
+"sometimes open a txt, then open a cpp in the same vim
+au BufNewFile,BufRead *.{cpp,c,cc,cxx,h,hpp} setlocal fdm=syntax
+
 " help formatoptions 有
 " m：在多字节字符处可以折行，对中文特别有效（否则只在空白字符处折行）； --  这应该指的是输入模式下
 " M：在拼接两行时（重新格式化，或者是手工使用“J”命令），如果前一行的结尾或后一行的开头是多字节字符，则不插入空格，非常适合中文
 " 我想解决刚打开cpp文件时c-support有些功能没有调用的bug，然而下面的语句并没有作用,参考vim.txt 2016.07.28
-au FileType cpp source ~/.vim/ftplugin/c.vim
+"au FileType cpp source ~/.vim/ftplugin/c.vim
 au BufNewFile,BufRead *.{cpp,c,h,hpp,cc} set filetype=cpp
+au BufNewFile,BufRead *.{cpp,c,h,hpp,cc} set textwidth=80
+au BufNewFile,BufRead *.{log,LOG,info,INFO} set filetype=text
+
+"csupport
+"let g:C_InsertFileHeader='no'
+let g:C_MapLeader='\'
 
 let mapleader = ","
 let g:mapleader = ","
+let maplocalleader = ","
 nmap <leader>w :w!<cr>
-set clipboard=unnamedplus
+"set clipboard=unnamedplus "on mac, seems to not recognize this, and yy cmd
+"not copy to the reg *
+"共享剪贴板  
+set clipboard=unnamedplus 
 set go+=a "从vim中能复制到系统剪贴板
 set go+=b "水平滚动条
 map <C-F12> <esc>:!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .<cr><cr>
@@ -38,6 +53,8 @@ au FileType javascript setlocal dict+=~/.vim/dict/javascript.dict
 au FileType html setlocal dict+=~/.vim/dict/javascript.dict
 au FileType html setlocal dict+=~/.vim/dict/css.dict
 "
+let g:pathogen_disabled = []
+
 "syntastic相关
 execute pathogen#infect()
 let g:syntastic_python_checkers=['pylint']
@@ -58,7 +75,11 @@ color desert     " 设置背景主题
 "color ron     " 设置背景主题  
 "color torte     " 设置背景主题  
 "set guifont=Courier_New:h10:cANSI   " 设置字体  
-set guifont=Monospace\ 13
+if has("gui_macvim")
+  set guifont=Monaco:h14
+else
+  set guifont=Monospace\ 13
+endif
 "autocmd InsertLeave * se nocul  " 用浅色高亮当前行  
 autocmd InsertEnter * se cul    " 用浅色高亮当前行  
 set ruler           " 显示标尺  
@@ -210,7 +231,6 @@ imap <C-a> <Esc>^
 imap <C-e> <Esc>$
 vmap <C-c> "+y
 set mouse=v
-"set clipboard=unnamed
 "去空行  
 nnoremap <F2> :g/^\s*$/d<CR> 
 "比较文件  
@@ -221,6 +241,8 @@ nnoremap <C-F2> :vert diffsplit
 "map <F3> :NERDTreeToggle<CR>
 "imap <F3> <ESC> :NERDTreeToggle<CR>
 map tw :NERDTreeToggle<CR>
+map tf :NERDTreeFind<CR>
+
 "打开树状文件目录  
 map <C-F3> \be  
 :autocmd BufRead,BufNewFile *.dot map <F5> :w<CR>:!dot -Tjpg -o %<.jpg % && eog %<.jpg  <CR><CR> && exec "redr!"
@@ -312,8 +334,6 @@ autocmd FileType c,cpp map <buffer> <leader><space> :w<cr>:make<cr>
 set completeopt=preview,menu 
 "允许插件  
 "filetype plugin on
-"共享剪贴板  
-"set clipboard+=unnamed 
 "自动保存
 set autowrite
 "set ruler                   " 打开状态栏标尺
@@ -394,7 +414,6 @@ let Tlist_Exist_OnlyWindow = 1  " 如果只有一个buffer，kill窗口也kill�
 set tags=tags;  
 set autochdir 
 
-
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "其他东东
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -439,6 +458,8 @@ set fileencoding=utf-8
 set fileencodings=utf-8,ucs-bom,gbk,cp936,gb2312,gb18030
 
 autocmd FileType python set omnifunc=pythoncomplete#Complete
+filetype plugin on
+set omnifunc=syntaxcomplete#Complete
 
 "set nocompatible               " be iMproved
 "filetype off                   " required!
@@ -454,7 +475,7 @@ Bundle 'gmarik/vundle'
 "
 " original repos on github
 Bundle 'tpope/vim-fugitive'
-Bundle 'rstacruz/sparkup', {'rtp': 'vim/'}
+"Bundle 'rstacruz/sparkup', {'rtp': 'vim/'}
 Bundle 'Yggdroot/indentLine'
 Bundle 'Valloric/YouCompleteMe'
 Bundle 'hari-rangarajan/CCTree'
@@ -465,7 +486,8 @@ Bundle 'L9'
 Bundle 'FuzzyFinder'
 " non github repos
 Bundle 'https://github.com/wincent/command-t.git'
-Bundle 'Auto-Pairs'
+"Bundle 'Auto-Pairs'
+Bundle 'extr15/Auto-Pairs'
 Bundle 'python-imports.vim'
 Bundle 'CaptureClipboard'
 Bundle 'ctrlp-modified.vim'
@@ -473,17 +495,24 @@ Bundle 'last_edit_marker.vim'
 Bundle 'synmark.vim'
 "Bundle 'Python-mode-klen'
 "Bundle 'SQLComplete.vim'
-Bundle 'Javascript-OmniCompletion-with-YUI-and-j'
+"Bundle 'Javascript-OmniCompletion-with-YUI-and-j'
 "Bundle 'JavaScript-Indent'
 "Bundle 'Better-Javascript-Indentation'
-Bundle 'jslint.vim'
-Bundle "pangloss/vim-javascript"
+"Bundle 'jslint.vim'
+"Bundle 'pangloss/vim-javascript'
 Bundle 'Vim-Script-Updater'
 Bundle 'ctrlp.vim'
 Bundle 'tacahiroy/ctrlp-funky'
-Bundle 'jsbeautify'
+"Bundle 'jsbeautify'
 Bundle 'The-NERD-Commenter'
 Bundle 'fholgado/minibufexpl.vim'
+Bundle 'rdnetto/YCM-Generator'
+Bundle 'CodeFalling/fcitx-vim-osx'
+Bundle 'lyuts/vim-rtags'
+Bundle 'derekwyatt/vim-fswitch'
+Bundle 'hynek/vim-python-pep8-indent'
+"Bundle 'LaTeX-Box-Team/LaTeX-Box'
+Bundle 'mhinz/vim-hugefile'
 "django
 "Bundle 'django_templates.vim'
 "Bundle 'Django-Projects'
@@ -495,6 +524,10 @@ let g:html_indent_inctags = "html,body,head,tbody"
 let g:html_indent_script1 = "inc"
 let g:html_indent_style1 = "inc"
 
+"let g:LatexBox_latexmk_options = " -pdflatex='xelatex -synctex=1 \%O \%S' "
+"let g:LatexBox_viewer = "skim "
+"let g:tex_no_math = 1
+
 filetype plugin indent on     " required!
 "
 "ctrlp设置
@@ -502,11 +535,28 @@ filetype plugin indent on     " required!
 set wildignore+=*/tmp/*,*.so,*.swp,*.zip,*.pyc,*.png,*.jpg,*.gif     " MacOSX/Linux
 set wildignore+=*\\tmp\\*,*.swp,*.zip,*.exe,*.pyc,*.png,*.jpg,*.gif  " Windows
 
+let g:hugefile_trigger_size=30
 let g:ctrlp_custom_ignore = '\v[\/]\.(git|hg|svn)$'
 let g:ctrlp_custom_ignore = '\v\.(exe|so|dll)$'
 let g:ctrlp_extensions = ['funky']
 
 let NERDTreeIgnore=['\.pyc']
+
+"YCM
+let g:ycm_confirm_extra_conf = 0
+let g:syntastic_always_populate_loc_list = 1
+let g:ycm_error_symbol = '>>'
+let g:ycm_warning_symbol = '>*'
+let g:ycm_disable_for_files_larger_than_kb=500
+nnoremap gd :YcmCompleter GoTo<CR>
+nnoremap gc :YcmCompleter GoToDeclaration<CR>
+nmap <F4> :YcmDiags<CR>
+" let g:ycm_filetype_whitelist = {'text':1}; this cmd will overwrite default
+" set:  {'*':1}
+"let g:ycm_filetype_whitelist = {'text':1,'txt':1,'*':1}
+"let g:ycm_filetype_blacklist = {'notes': 1, 'netrw': 1, 'unite': 1, 'tagbar': 1, 'pandoc': 1, 'mail': 1, 'vimwiki': 1, 'infolog': 1, 'qf': 1}
+
+nmap fs :FSHere<CR>
 
 "重定向命令输出到新窗口
 " http://vim.wikia.com/wiki/Capture_ex_command_output
@@ -525,4 +575,6 @@ function! TabMessage(cmd)
 endfunction
 command! -nargs=+ -complete=command TabMessage call TabMessage(<q-args>)
 
+fixdel
+set backspace=indent,eol,start
 set showcmd "上一句showcmd好像被覆盖了

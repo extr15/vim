@@ -20,7 +20,7 @@ au BufNewFile,BufRead *.{cpp,c,cc,cxx,h,hpp} setlocal fdm=syntax
 " 我想解决刚打开cpp文件时c-support有些功能没有调用的bug，然而下面的语句并没有作用,参考vim.txt 2016.07.28
 "au FileType cpp source ~/.vim/ftplugin/c.vim
 au BufNewFile,BufRead *.{cpp,c,h,hpp,cc} set filetype=cpp
-au BufNewFile,BufRead *.{cpp,c,h,hpp,cc} set textwidth=80
+"au BufNewFile,BufRead *.{cpp,c,h,hpp,cc} set textwidth=80
 au BufNewFile,BufRead *.{log,LOG,info,INFO} set filetype=text
 
 "csupport
@@ -499,7 +499,7 @@ Bundle 'synmark.vim'
 "Bundle 'JavaScript-Indent'
 "Bundle 'Better-Javascript-Indentation'
 "Bundle 'jslint.vim'
-"Bundle 'pangloss/vim-javascript'
+"Bundle "pangloss/vim-javascript"
 Bundle 'Vim-Script-Updater'
 Bundle 'ctrlp.vim'
 Bundle 'tacahiroy/ctrlp-funky'
@@ -513,6 +513,7 @@ Bundle 'derekwyatt/vim-fswitch'
 Bundle 'hynek/vim-python-pep8-indent'
 "Bundle 'LaTeX-Box-Team/LaTeX-Box'
 Bundle 'mhinz/vim-hugefile'
+Bundle 'Konfekt/FastFold'
 "django
 "Bundle 'django_templates.vim'
 "Bundle 'Django-Projects'
@@ -555,6 +556,14 @@ nmap <F4> :YcmDiags<CR>
 " set:  {'*':1}
 "let g:ycm_filetype_whitelist = {'text':1,'txt':1,'*':1}
 "let g:ycm_filetype_blacklist = {'notes': 1, 'netrw': 1, 'unite': 1, 'tagbar': 1, 'pandoc': 1, 'mail': 1, 'vimwiki': 1, 'infolog': 1, 'qf': 1}
+
+
+"rtags
+noremap <Leader>j :call rtags#JumpTo(g:SAME_WINDOW)<CR>
+noremap <Leader>l :call rtags#JumpTo(g:SAME_WINDOW, { '--declaration-only' : '' })<CR>
+noremap <Leader>b :call rtags#JumpBack()<CR>
+noremap <Leader>i :call rtags#SymbolInfo()<CR>
+noremap <Leader>f :call rtags#FindRefs()<CR>
 
 nmap fs :FSHere<CR>
 

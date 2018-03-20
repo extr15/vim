@@ -204,7 +204,7 @@ call s:C_SetGlobalVariable ( 'C_UseTool_cmake',   'no' )
 call s:C_SetGlobalVariable ( 'C_UseTool_doxygen', 'no' )
 call s:C_SetGlobalVariable ( 'C_UseTool_make',    'yes' )
 "
-let s:C_Ctrl_j								= 'on'
+let s:C_Ctrl_j								= 'off'
 "
 let s:C_SourceCodeExtensions  = 'c cc cp cxx cpp CPP c++ C i ii'
 let s:C_CppcheckSeverity			= 'all'

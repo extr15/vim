@@ -14,6 +14,14 @@ au FileType text set fdm=marker fo+=mM
 "sometimes open a txt, then open a cpp in the same vim
 au BufNewFile,BufRead *.{cpp,c,cc,cxx,h,hpp} setlocal fdm=syntax
 
+"avoid namespace content indent, ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
+set cino=N-s
+" back to the parent when in tree/blob.
+autocmd User fugitive 
+  \ if fugitive#buffer().type() =~# '^\%(tree\|blob\)$' |
+  \   nnoremap <buffer> .. :edit %:h<CR> |
+\ endif
+
 " help formatoptions 有
 " m：在多字节字符处可以折行，对中文特别有效（否则只在空白字符处折行）； --  这应该指的是输入模式下
 " M：在拼接两行时（重新格式化，或者是手工使用“J”命令），如果前一行的结尾或后一行的开头是多字节字符，则不插入空格，非常适合中文
@@ -35,6 +43,9 @@ nmap <leader>w :w!<cr>
 "not copy to the reg *
 "共享剪贴板  
 set clipboard=unnamedplus 
+" 在cmdline模式下能从系统剪贴板复制
+cnoremap <S-Insert> <C-R>*
+cnoremap <C-v> <C-R>*
 set go+=a "从vim中能复制到系统剪贴板
 set go+=b "水平滚动条
 map <C-F12> <esc>:!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .<cr><cr>
@@ -78,7 +89,8 @@ color desert     " 设置背景主题
 if has("gui_macvim")
   set guifont=Monaco:h14
 else
-  set guifont=Monospace\ 13
+  "set guifont=Monospace\ 13
+  set guifont=Monaco\ 13
 endif
 "autocmd InsertLeave * se nocul  " 用浅色高亮当前行  
 autocmd InsertEnter * se cul    " 用浅色高亮当前行  
@@ -220,10 +232,17 @@ map! <C-Z> <Esc>zzi
 map! <C-O> <C-Y>,
 map <C-A> ggVG$"+y
 map <F12> gg=G
-map <C-w> <C-w>w
-imap <C-k> <C-y>,
-imap <C-t> <C-q><TAB>
-imap <C-j> <ESC>
+"map <C-w> <C-w>w
+"imap <C-k> <C-y>,
+"imap <C-t> <C-q><TAB>
+"imap <C-j> <ESC>
+" 窗口切换
+"map <C-w> <C-w>w " can not enable this because conflict with below
+let g:C_Ctrl_j = 'off'
+map <C-j> <C-w><C-j>
+map <C-k> <C-w><C-k>
+map <C-h> <C-w><C-h>
+map <C-l> <C-w><C-l>
 " 选中状态下 Ctrl+c 复制
 "map <C-v> "*pa
 imap <C-v> <Esc>"*pa
@@ -485,7 +504,16 @@ let g:indentLine_char = '┊'
 Bundle 'L9'
 Bundle 'FuzzyFinder'
 " non github repos
-Bundle 'https://github.com/wincent/command-t.git'
+"Bundle 'https://github.com/wincent/command-t.git'
+Bundle 'Shougo/unite.vim'
+Bundle 'Shougo/vimproc.vim'
+"MRU Most Recently Used
+Bundle 'Shougo/neomru.vim'
+"Saves yank history includes unite.vim history/yank source.
+Bundle 'Shougo/neoyank.vim'
+Bundle 'Shougo/unite-outline'
+"A source of unite.vim for history of command/search.
+Bundle 'thinca/vim-unite-history'
 "Bundle 'Auto-Pairs'
 Bundle 'extr15/Auto-Pairs'
 Bundle 'python-imports.vim'
@@ -507,13 +535,18 @@ Bundle 'tacahiroy/ctrlp-funky'
 Bundle 'The-NERD-Commenter'
 Bundle 'fholgado/minibufexpl.vim'
 Bundle 'rdnetto/YCM-Generator'
-Bundle 'CodeFalling/fcitx-vim-osx'
+"Bundle 'CodeFalling/fcitx-vim-osx'
 Bundle 'lyuts/vim-rtags'
 Bundle 'derekwyatt/vim-fswitch'
 Bundle 'hynek/vim-python-pep8-indent'
 "Bundle 'LaTeX-Box-Team/LaTeX-Box'
 Bundle 'mhinz/vim-hugefile'
 Bundle 'Konfekt/FastFold'
+Bundle 'octol/vim-cpp-enhanced-highlight'
+Bundle 'rhysd/vim-clang-format'
+
+Bundle 'mileszs/ack.vim'
+
 "django
 "Bundle 'django_templates.vim'
 "Bundle 'Django-Projects'
@@ -528,6 +561,20 @@ let g:html_indent_style1 = "inc"
 "let g:LatexBox_latexmk_options = " -pdflatex='xelatex -synctex=1 \%O \%S' "
 "let g:LatexBox_viewer = "skim "
 "let g:tex_no_math = 1
+
+"ack.vim, config to use ag
+let g:ackprg = 'ag --vimgrep'
+
+"unite
+"let g:unite_source_rec_async_command='ag --path-to-ignore /Users/renyong/software/software_git/config/.agignore --nocolor --nogroup --ignore ".hg" --ignore ".svn" --ignore ".git" --ignore ".bzr" --hidden -g ""'
+let g:unite_source_rec_async_command =
+    \ ['ag', '-p ~/.agignore', '--follow', '--nogroup', '--nocolor', '--hidden', '-g', '']
+nnoremap <silent> <leader>ug  :<C-u>Unite file_rec/git:--cached:--others:--exclude-standard<CR>
+nnoremap <leader>ur :<C-u>Unite -start-insert file_rec/async<CR>
+nnoremap <leader>uf :<C-u>Unite file<CR>
+nnoremap <silent> <leader>ub :<C-u>Unite buffer bookmark<CR>
+nnoremap <silent><leader>ul :<C-u>Unite -no-quit line<CR>
+nnoremap <silent><leader>ui :<C-u>Unite -no-quit -ignorecase line<CR>
 
 filetype plugin indent on     " required!
 "

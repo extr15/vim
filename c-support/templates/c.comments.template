@@ -42,43 +42,28 @@
 
 == SEP: Comments.sep_file ==
 
-== Comments.file description impl == map:cfdi, shortcut:c, start, noindent ==
-/*
- * =====================================================================================
- *
- *       Filename:  |FILENAME|
- *
- *    Description:  <CURSOR>
- *
- *        Version:  1.0
- *        Created:  |DATE| |TIME|
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  |AUTHOR| , |EMAIL|
- *   Organization:  |ORGANIZATION|
- *
- * =====================================================================================
- */
+§ == Comments.file description impl == map:cfdi, shortcut:c, start, noindent ==
+§ /*
+§  * =====================================================================================
+§  *
+§  *       Filename:  |FILENAME|
+§  *
+§  *    Description:  <CURSOR>
+§  *
+§  *        Version:  1.0
+§  *        Created:  |DATE| |TIME|
+§  *       Revision:  none
+§  *       Compiler:  gcc
+§  *
+§  *         Author:  |AUTHOR| , |EMAIL|
+§  *   Organization:  |ORGANIZATION|
+§  *
+§  * =====================================================================================
+§  */
 
 == Comments.file description header == map:cfdh, shortcut:h, start, noindent ==
-/*
- * =====================================================================================
- *
- *       Filename:  |FILENAME|
- *
- *    Description:  <CURSOR>
- *
- *        Version:  1.0
- *        Created:  |DATE| |TIME|
- *       Revision:  none
- *       Compiler:  gcc
- *
- *         Author:  |AUTHOR| , |EMAIL|
- *   Organization:  |ORGANIZATION|
- *
- * =====================================================================================
- */
+#pragma once
+
 == ENDTEMPLATE ==
 
 == LIST: comments_c_sections == hash ==

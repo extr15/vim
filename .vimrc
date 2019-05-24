@@ -13,14 +13,42 @@ set fdm=syntax
 au FileType text set fdm=marker fo+=mM
 "sometimes open a txt, then open a cpp in the same vim
 au BufNewFile,BufRead *.{cpp,c,cc,cxx,h,hpp} setlocal fdm=syntax
-
+" json file and elzr/vim-json plugin. did_indent=1, otherwise will very slow opening a 10M file
+au BufNewFile,BufRead *.json set fdm=indent syntax=json 
+au BufNewFile,BufRead *.json let b:did_indent=1
 "avoid namespace content indent, ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
 set cino=N-s
+au BufNewFile,BufRead *.{md,markdown,MD} :command! Mp MarkdownPreview
+au BufNewFile,BufRead *.{md,markdown,MD} :command! Lp LivedownPreview
+au BufNewFile,BufRead *.{md,markdown,MD} :command! Lk LivedownKill
+
 " back to the parent when in tree/blob.
 autocmd User fugitive 
   \ if fugitive#buffer().type() =~# '^\%(tree\|blob\)$' |
   \   nnoremap <buffer> .. :edit %:h<CR> |
-\ endif
+  \ endif
+
+" Don't indent template
+" ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
+" http://stackoverflow.com/questions/387792/vim-indentation-for-c-templates -- this code not work for me
+function! CppNoTemplateIndent()
+  let l:cline_num = line('.')
+  let l:pline_num = prevnonblank(l:cline_num - 1)
+  let l:pline = getline(l:pline_num)
+  let l:retv = cindent('.')
+  while l:pline =~# '\(^\s*{\s*\|^\s*//\|^\s*/\*\|\*/\s*$\)'
+    let l:pline_num = prevnonblank(l:pline_num - 1)
+    let l:pline = getline(l:pline_num)
+  endwhile
+  if l:pline =~# '^\s*template.*'
+    let l:retv = 0
+  endif
+  return l:retv
+endfunction
+
+if has("autocmd")
+    autocmd BufEnter *.{cc,cxx,cpp,h,hh,hpp,hxx} setlocal indentexpr=CppNoTemplateIndent()
+endif
 
 " help formatoptions 有
 " m：在多字节字符处可以折行，对中文特别有效（否则只在空白字符处折行）； --  这应该指的是输入模式下
@@ -154,8 +182,8 @@ au BufRead,BufNewFile *.{md,mdown,mkd,mkdn,markdown,mdwn}   set filetype=mkd
 au BufRead,BufNewFile *.{go}   set filetype=go
 au BufRead,BufNewFile *.{js}   set filetype=javascript
 "rkdown to HTML  
-nmap md :!~/.vim/markdown.pl % > %.html <CR><CR>
-nmap fi :!firefox %.html & <CR><CR>
+"nmap md :!~/.vim/markdown.pl % > %.html <CR><CR>
+"nmap fi :!firefox %.html & <CR><CR>
 nmap \ \cc
 vmap \ \cc
 
@@ -252,6 +280,8 @@ vmap <C-c> "+y
 set mouse=v
 "去空行  
 nnoremap <F2> :g/^\s*$/d<CR> 
+"拷贝当前路径和文件名
+noremap <silent> <F2> :let @*=expand("%:p")<CR>
 "比较文件  
 nnoremap <C-F2> :vert diffsplit 
 "nnoremap <Leader>fu :CtrlPFunky<Cr>
@@ -502,7 +532,7 @@ let g:indentLine_char = '┊'
 "ndle 'tpope/vim-rails.git'
 " vim-scripts repos
 Bundle 'L9'
-Bundle 'FuzzyFinder'
+"Bundle 'FuzzyFinder'
 " non github repos
 "Bundle 'https://github.com/wincent/command-t.git'
 Bundle 'Shougo/unite.vim'
@@ -514,11 +544,13 @@ Bundle 'Shougo/neoyank.vim'
 Bundle 'Shougo/unite-outline'
 "A source of unite.vim for history of command/search.
 Bundle 'thinca/vim-unite-history'
+Bundle 'devjoe/vim-codequery'
+Bundle 'skwp/greplace.vim'
 "Bundle 'Auto-Pairs'
 Bundle 'extr15/Auto-Pairs'
 Bundle 'python-imports.vim'
 Bundle 'CaptureClipboard'
-Bundle 'ctrlp-modified.vim'
+"Bundle 'ctrlp-modified.vim'
 Bundle 'last_edit_marker.vim'
 Bundle 'synmark.vim'
 "Bundle 'Python-mode-klen'
@@ -529,8 +561,8 @@ Bundle 'synmark.vim'
 "Bundle 'jslint.vim'
 "Bundle "pangloss/vim-javascript"
 Bundle 'Vim-Script-Updater'
-Bundle 'ctrlp.vim'
-Bundle 'tacahiroy/ctrlp-funky'
+"Bundle 'ctrlp.vim'
+"Bundle 'tacahiroy/ctrlp-funky'
 "Bundle 'jsbeautify'
 Bundle 'The-NERD-Commenter'
 Bundle 'fholgado/minibufexpl.vim'
@@ -544,8 +576,10 @@ Bundle 'mhinz/vim-hugefile'
 Bundle 'Konfekt/FastFold'
 Bundle 'octol/vim-cpp-enhanced-highlight'
 Bundle 'rhysd/vim-clang-format'
+Bundle 'airblade/vim-gitgutter'
 
 Bundle 'mileszs/ack.vim'
+Bundle 'inkarkat/vim-mark'
 
 "django
 "Bundle 'django_templates.vim'
@@ -553,6 +587,12 @@ Bundle 'mileszs/ack.vim'
 
 "Bundle 'FredKSchott/CoVim'
 "Bundle 'djangojump'
+Bundle 'iamcco/mathjax-support-for-mkdp'
+Bundle 'iamcco/markdown-preview.vim'
+Bundle 'tpope/vim-repeat'
+Bundle 'tpope/vim-surround'
+Bundle 'majutsushi/tagbar'
+Bundle 'shime/vim-livedown'
 " ...
 let g:html_indent_inctags = "html,body,head,tbody"
 let g:html_indent_script1 = "inc"
@@ -562,17 +602,27 @@ let g:html_indent_style1 = "inc"
 "let g:LatexBox_viewer = "skim "
 "let g:tex_no_math = 1
 
+" tagbar
+let g:tagbar_left = 1
+nnoremap tb :TagbarToggle<CR>
+" markdown-preview
+let g:mkdp_refresh_slow = 0
+" vim-surround. `q` means `quote`, this is for markdown file.
+xmap q <Plug>VSurround`
+:xnoremap S3 <esc>`<O<esc>S```<esc>`>o<esc>S```<esc>k$
+
 "ack.vim, config to use ag
 let g:ackprg = 'ag --vimgrep'
+nnoremap <Leader>a :Ack<Enter>
 
 "unite
 "let g:unite_source_rec_async_command='ag --path-to-ignore /Users/renyong/software/software_git/config/.agignore --nocolor --nogroup --ignore ".hg" --ignore ".svn" --ignore ".git" --ignore ".bzr" --hidden -g ""'
 let g:unite_source_rec_async_command =
     \ ['ag', '-p ~/.agignore', '--follow', '--nogroup', '--nocolor', '--hidden', '-g', '']
 nnoremap <silent> <leader>ug  :<C-u>Unite file_rec/git:--cached:--others:--exclude-standard<CR>
-nnoremap <leader>ur :<C-u>Unite -start-insert file_rec/async<CR>
-nnoremap <leader>uf :<C-u>Unite file<CR>
-nnoremap <silent> <leader>ub :<C-u>Unite buffer bookmark<CR>
+nnoremap <leader>ur :<C-u>Unite -start-insert -ignorecase file_rec/async<CR>
+nnoremap <leader>uf :<C-u>Unite -ignorecase file<CR>
+nnoremap <silent> <leader>ub :<C-u>Unite -ignorecase buffer bookmark<CR>
 nnoremap <silent><leader>ul :<C-u>Unite -no-quit line<CR>
 nnoremap <silent><leader>ui :<C-u>Unite -no-quit -ignorecase line<CR>
 

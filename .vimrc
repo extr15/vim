@@ -206,6 +206,7 @@ set clipboard=unnamedplus
 " 在cmdline模式下能从系统剪贴板复制
 cnoremap <S-Insert> <C-R>*
 cnoremap <C-v> <C-R>*
+cnoremap <C-t> tab sb<Enter>
 set go+=a "从vim中能复制到系统剪贴板
 set go+=b "水平滚动条
 map <C-F12> <esc>:!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .<cr><cr>

@@ -4,13 +4,16 @@
 "set smartindent
 " set lbr ；linebreak,应该关闭，否则中文显示时折行不会在一句话的内部，只会在空格的地方断开
 set fo+=mB
+set nostartofline
 set sm
 set selection=inclusive
 set wildmenu
 set mousemodel=popup
 " renyong
+let $TMPDIR = $HOME."/.tmp"
 set fdm=syntax
 au FileType text set fdm=marker fo+=mM
+set textwidth=0
 "sometimes open a txt, then open a cpp in the same vim
 au BufNewFile,BufRead *.{cpp,c,cc,cxx,h,hpp} setlocal fdm=syntax
 " json file and elzr/vim-json plugin. did_indent=1, otherwise will very slow opening a 10M file
@@ -27,6 +30,135 @@ autocmd User fugitive
   \ if fugitive#buffer().type() =~# '^\%(tree\|blob\)$' |
   \   nnoremap <buffer> .. :edit %:h<CR> |
   \ endif
+
+function! Review(flag)
+  let l:back_day = [1, 2, 4, 7, 15, 30, 60, 150, 365]
+  let l:last_line_num = 0
+  if a:flag == 0
+    let l:last_line_num = line('$')
+  else
+    let l:last_line_num = line('.')
+  endif
+  let l:review_line = [l:last_line_num]
+  let l:review_day = [getline(l:last_line_num)]
+  for l:day in l:back_day
+    if l:last_line_num > l:day
+      let l:cur_line = l:last_line_num - l:day
+      call add(l:review_line, l:cur_line)
+      call add(l:review_day, getline(l:cur_line))
+    endif
+  endfor
+  "echo l:review_line
+  "echo l:review_day
+  cexpr l:review_day
+  caddexpr "" 
+  cwindow
+endfunction
+command! Review call Review(0)
+command! ReviewCur call Review(1)
+command! Pyplot silent !python ~/exercise/python/plot_data_from_file.py % &
+command! PyplotMultiCol silent !python ~/exercise/python/plot_data_multi_col_from_file.py % &
+
+function! s:GetCurrentCol(...)
+  "echo 'func param num: ' a:0
+  let l:separator = a:0 >=1 ? a:1 : " "
+  "echo l:separator
+  if a:0 >= 1
+    "echo 'sepChar: ' a:1
+    let l:matchPat = join([l:separator, '*[^', l:separator, ']*'], '')
+    "echo l:matchPat
+  else
+    let l:matchPat = '\s*\S*'
+  endif
+  "echo 'l:matchPat ' l:matchPat
+  let l:textBeforeCursor = strpart(getline('.'), 0, col('.') - 1)
+  let l:reduceColumnToSingleChar = substitute(textBeforeCursor, l:matchPat, 'x', 'g')
+  let l:colIdx = len(l:reduceColumnToSingleChar)
+  echo 'col: ' l:colIdx
+  return l:colIdx
+endfunction
+" :help command-nargs
+command! -nargs=? GetCurrentCol call s:GetCurrentCol(<f-args>)
+
+function! AwkPrintCurCol()
+  " https://stackoverflow.com/questions/40885770/how-to-display-the-column-number-of-columns-of-numbers-with-vim 
+  let l:textBeforeCursor = strpart(getline('.'), 0, col('.') - 1)
+  let l:reduceColumnToSingleChar = substitute(textBeforeCursor, '\s*\S*', 'x', 'g')
+  "echo len(reduceColumnToSingleChar)
+  "let l:cur_col = len(reduceColumnToSingleChar)
+  "echo l:cur_col
+  "!awk -v var_col=l:cur_col '{print $var_col}' % > g1.txt
+  "new | r ! awk -v var_col=l:cur_col '{print $var_col}' %
+  "let l:file_name = expand('%:p')
+  "echo l:file_name
+  "new | r ! awk -v var_col=l:cur_col -v var_file_name=l:file_name '{print $var_col}' var_file_name
+  "! awk -v var_col=l:cur_col '{print $var_col}' %
+  "!awk -v var=l:cur_col '{print $var}' %:p
+  "!awk -v var=(echo l:cur_col) '{print $var}' %:p
+  "!awk -v var=8 '{print $var}' %:p
+  let $cur_col=len(reduceColumnToSingleChar)
+  let $file_name=expand('%:p')
+  "!awk -v var=$cur_col '{print $var}' %:p
+  "new | r ! awk -v var=$cur_col '{print $var}' %:p
+  "new | r ! awk -v var=$cur_col '{print $var}' $file_name
+  "let l:tmpfile = tempname()
+  "echo l:tmpfile
+  "! awk -v var=$cur_col '{print $var}' $file_name > l:tmpfile
+  ""new | r l:tmpfile
+  "new l:tmpfile
+  let $tmpfile = tempname()
+  "echo $tmpfile
+  silent !awk -v var=$cur_col '{print $var}' $file_name > $tmpfile
+  "new $tmpfile
+  tabnew $tmpfile
+endfunction
+"command! AwkPrint call AwkPrintCurCol()
+
+function! s:AwkPrintCurColSep(...)
+  let $file_name=expand('%:p')
+  let $tmpfile = tempname()
+  "echo 'param: ' a:000
+  if a:0 >= 1
+    silent let $cur_col = s:GetCurrentCol(a:1)
+    let $sep = a:1
+    "echo 'sep: ' $sep
+    silent !awk -F $sep -v var=$cur_col '{print $var}' $file_name > $tmpfile
+    "!awk -v var=$cur_col -F ',' '{print $var}' $file_name > $tmpfile
+    "!awk -v var=$cur_col 'BEGIN{FS=","} {print $var}' $file_name > $tmpfile
+  else 
+    let $cur_col = s:GetCurrentCol()
+    silent !awk -v var=$cur_col '{print $var}' $file_name > $tmpfile
+  endif
+  "let $cur_col = s:GetCurrentCol(a:000) not work.
+  "echo '$cur_col' $cur_col
+  tabnew $tmpfile
+endfunction
+
+command! -nargs=? AwkPrint call s:AwkPrintCurColSep(<f-args>)
+
+" https://stackoverflow.com/questions/1533565/how-to-get-visually-selected-text-in-vimscript
+function! s:get_visual_selection()
+    " Why is this not a built-in Vim script function?!
+    let [line_start, column_start] = getpos("'<")[1:2]
+    let [line_end, column_end] = getpos("'>")[1:2]
+    let lines = getline(line_start, line_end)
+    if len(lines) == 0
+        return ''
+    endif
+    let lines[-1] = lines[-1][: column_end - (&selection == 'inclusive' ? 1 : 2)]
+    let lines[0] = lines[0][column_start - 1:]
+    return join(lines, "\n")
+endfunction
+
+function! GrepPrint()
+  let $grep_text = s:get_visual_selection()
+  "echo "grep_text: " $grep_text
+  let $tmpfile = tempname()
+  silent !grep $grep_text %:p > $tmpfile
+  tabnew $tmpfile
+endfunction
+
+command! -range GrepPrint call GrepPrint() 
 
 " Don't indent template
 " ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
@@ -462,6 +594,9 @@ let Tlist_Exist_OnlyWindow = 1  " 如果只有一个buffer，kill窗口也kill�
 "设置tags  
 set tags=tags;  
 set autochdir 
+" seems `autochdir` not work
+" https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
+autocmd BufEnter * silent! lcd %:p:h
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "其他东东
@@ -593,6 +728,7 @@ Bundle 'tpope/vim-repeat'
 Bundle 'tpope/vim-surround'
 Bundle 'majutsushi/tagbar'
 Bundle 'shime/vim-livedown'
+Bundle 'nelstrom/vim-visual-star-search'
 " ...
 let g:html_indent_inctags = "html,body,head,tbody"
 let g:html_indent_script1 = "inc"
@@ -662,7 +798,7 @@ noremap <Leader>b :call rtags#JumpBack()<CR>
 noremap <Leader>i :call rtags#SymbolInfo()<CR>
 noremap <Leader>f :call rtags#FindRefs()<CR>
 
-nmap fs :FSHere<CR>
+nmap gs :FSHere<CR>
 
 "重定向命令输出到新窗口
 " http://vim.wikia.com/wiki/Capture_ex_command_output

@@ -90,7 +90,8 @@ if has("gui_macvim")
   set guifont=Monaco:h14
 else
   "set guifont=Monospace\ 13
-  set guifont=Monaco\ 13
+  "set guifont=Monaco\ 18
+  set guifont=Monaco\ 14
 endif
 "autocmd InsertLeave * se nocul  " 用浅色高亮当前行  
 autocmd InsertEnter * se cul    " 用浅色高亮当前行  
@@ -566,10 +567,10 @@ let g:ackprg = 'ag --vimgrep'
 "let g:unite_source_rec_async_command='ag --path-to-ignore /Users/renyong/software/software_git/config/.agignore --nocolor --nogroup --ignore ".hg" --ignore ".svn" --ignore ".git" --ignore ".bzr" --hidden -g ""'
 let g:unite_source_rec_async_command =
     \ ['ag', '-p ~/.agignore', '--follow', '--nogroup', '--nocolor', '--hidden', '-g', '']
-nnoremap <silent> <leader>ug  :<C-u>Unite file_rec/git:--cached:--others:--exclude-standard<CR>
-nnoremap <leader>ur :<C-u>Unite -start-insert file_rec/async<CR>
-nnoremap <leader>uf :<C-u>Unite file<CR>
-nnoremap <silent> <leader>ub :<C-u>Unite buffer bookmark<CR>
+nnoremap <silent> <leader>ug  :<C-u>Unite -ignorecase file_rec/git:--cached:--others:--exclude-standard<CR>
+nnoremap <leader>ur :<C-u>Unite -ignorecase -start-insert file_rec/async<CR>
+nnoremap <leader>uf :<C-u>Unite -ignorecase file<CR>
+nnoremap <silent> <leader>ub :<C-u>Unite -ignorecase buffer bookmark<CR>
 nnoremap <silent><leader>ul :<C-u>Unite -no-quit line<CR>
 nnoremap <silent><leader>ui :<C-u>Unite -no-quit -ignorecase line<CR>
 

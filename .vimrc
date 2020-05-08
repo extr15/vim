@@ -4,15 +4,183 @@
 "set smartindent
 " set lbr ；linebreak,应该关闭，否则中文显示时折行不会在一句话的内部，只会在空格的地方断开
 set fo+=mB
+set nostartofline
 set sm
 set selection=inclusive
 set wildmenu
 set mousemodel=popup
 " renyong
+let $TMPDIR = $HOME."/.tmp"
 set fdm=syntax
 au FileType text set fdm=marker fo+=mM
+set textwidth=0
 "sometimes open a txt, then open a cpp in the same vim
 au BufNewFile,BufRead *.{cpp,c,cc,cxx,h,hpp} setlocal fdm=syntax
+" json file and elzr/vim-json plugin. did_indent=1, otherwise will very slow opening a 10M file
+au BufNewFile,BufRead *.json set fdm=indent syntax=json 
+au BufNewFile,BufRead *.json let b:did_indent=1
+"avoid namespace content indent, ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
+set cino=N-s
+au BufNewFile,BufRead *.{md,markdown,MD} :command! Mp MarkdownPreview
+au BufNewFile,BufRead *.{md,markdown,MD} :command! Lp LivedownPreview
+au BufNewFile,BufRead *.{md,markdown,MD} :command! Lk LivedownKill
+
+" back to the parent when in tree/blob.
+autocmd User fugitive 
+  \ if fugitive#buffer().type() =~# '^\%(tree\|blob\)$' |
+  \   nnoremap <buffer> .. :edit %:h<CR> |
+  \ endif
+
+function! Review(flag)
+  let l:back_day = [1, 2, 4, 7, 15, 30, 60, 150, 365]
+  let l:last_line_num = 0
+  if a:flag == 0
+    let l:last_line_num = line('$')
+  else
+    let l:last_line_num = line('.')
+  endif
+  let l:review_line = [l:last_line_num]
+  let l:review_day = [getline(l:last_line_num)]
+  for l:day in l:back_day
+    if l:last_line_num > l:day
+      let l:cur_line = l:last_line_num - l:day
+      call add(l:review_line, l:cur_line)
+      call add(l:review_day, getline(l:cur_line))
+    endif
+  endfor
+  "echo l:review_line
+  "echo l:review_day
+  cexpr l:review_day
+  caddexpr "" 
+  cwindow
+endfunction
+command! Review call Review(0)
+command! ReviewCur call Review(1)
+command! Pyplot silent !python ~/exercise/python/plot_data_from_file.py % &
+command! PyplotMultiCol silent !python ~/exercise/python/plot_data_multi_col_from_file.py % &
+
+function! s:GetCurrentCol(...)
+  "echo 'func param num: ' a:0
+  let l:separator = a:0 >=1 ? a:1 : " "
+  "echo l:separator
+  if a:0 >= 1
+    "echo 'sepChar: ' a:1
+    let l:matchPat = join([l:separator, '*[^', l:separator, ']*'], '')
+    "echo l:matchPat
+  else
+    let l:matchPat = '\s*\S*'
+  endif
+  "echo 'l:matchPat ' l:matchPat
+  let l:textBeforeCursor = strpart(getline('.'), 0, col('.') - 1)
+  let l:reduceColumnToSingleChar = substitute(textBeforeCursor, l:matchPat, 'x', 'g')
+  let l:colIdx = len(l:reduceColumnToSingleChar)
+  echo 'col: ' l:colIdx
+  return l:colIdx
+endfunction
+" :help command-nargs
+command! -nargs=? GetCurrentCol call s:GetCurrentCol(<f-args>)
+
+function! AwkPrintCurCol()
+  " https://stackoverflow.com/questions/40885770/how-to-display-the-column-number-of-columns-of-numbers-with-vim 
+  let l:textBeforeCursor = strpart(getline('.'), 0, col('.') - 1)
+  let l:reduceColumnToSingleChar = substitute(textBeforeCursor, '\s*\S*', 'x', 'g')
+  "echo len(reduceColumnToSingleChar)
+  "let l:cur_col = len(reduceColumnToSingleChar)
+  "echo l:cur_col
+  "!awk -v var_col=l:cur_col '{print $var_col}' % > g1.txt
+  "new | r ! awk -v var_col=l:cur_col '{print $var_col}' %
+  "let l:file_name = expand('%:p')
+  "echo l:file_name
+  "new | r ! awk -v var_col=l:cur_col -v var_file_name=l:file_name '{print $var_col}' var_file_name
+  "! awk -v var_col=l:cur_col '{print $var_col}' %
+  "!awk -v var=l:cur_col '{print $var}' %:p
+  "!awk -v var=(echo l:cur_col) '{print $var}' %:p
+  "!awk -v var=8 '{print $var}' %:p
+  let $cur_col=len(reduceColumnToSingleChar)
+  let $file_name=expand('%:p')
+  "!awk -v var=$cur_col '{print $var}' %:p
+  "new | r ! awk -v var=$cur_col '{print $var}' %:p
+  "new | r ! awk -v var=$cur_col '{print $var}' $file_name
+  "let l:tmpfile = tempname()
+  "echo l:tmpfile
+  "! awk -v var=$cur_col '{print $var}' $file_name > l:tmpfile
+  ""new | r l:tmpfile
+  "new l:tmpfile
+  let $tmpfile = tempname()
+  "echo $tmpfile
+  silent !awk -v var=$cur_col '{print $var}' $file_name > $tmpfile
+  "new $tmpfile
+  tabnew $tmpfile
+endfunction
+"command! AwkPrint call AwkPrintCurCol()
+
+function! s:AwkPrintCurColSep(...)
+  let $file_name=expand('%:p')
+  let $tmpfile = tempname()
+  "echo 'param: ' a:000
+  if a:0 >= 1
+    silent let $cur_col = s:GetCurrentCol(a:1)
+    let $sep = a:1
+    "echo 'sep: ' $sep
+    silent !awk -F $sep -v var=$cur_col '{print $var}' $file_name > $tmpfile
+    "!awk -v var=$cur_col -F ',' '{print $var}' $file_name > $tmpfile
+    "!awk -v var=$cur_col 'BEGIN{FS=","} {print $var}' $file_name > $tmpfile
+  else 
+    let $cur_col = s:GetCurrentCol()
+    silent !awk -v var=$cur_col '{print $var}' $file_name > $tmpfile
+  endif
+  "let $cur_col = s:GetCurrentCol(a:000) not work.
+  "echo '$cur_col' $cur_col
+  tabnew $tmpfile
+endfunction
+
+command! -nargs=? AwkPrint call s:AwkPrintCurColSep(<f-args>)
+
+" https://stackoverflow.com/questions/1533565/how-to-get-visually-selected-text-in-vimscript
+function! s:get_visual_selection()
+    " Why is this not a built-in Vim script function?!
+    let [line_start, column_start] = getpos("'<")[1:2]
+    let [line_end, column_end] = getpos("'>")[1:2]
+    let lines = getline(line_start, line_end)
+    if len(lines) == 0
+        return ''
+    endif
+    let lines[-1] = lines[-1][: column_end - (&selection == 'inclusive' ? 1 : 2)]
+    let lines[0] = lines[0][column_start - 1:]
+    return join(lines, "\n")
+endfunction
+
+function! GrepPrint()
+  let $grep_text = s:get_visual_selection()
+  "echo "grep_text: " $grep_text
+  let $tmpfile = tempname()
+  silent !grep $grep_text %:p > $tmpfile
+  tabnew $tmpfile
+endfunction
+
+command! -range GrepPrint call GrepPrint() 
+
+" Don't indent template
+" ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
+" http://stackoverflow.com/questions/387792/vim-indentation-for-c-templates -- this code not work for me
+function! CppNoTemplateIndent()
+  let l:cline_num = line('.')
+  let l:pline_num = prevnonblank(l:cline_num - 1)
+  let l:pline = getline(l:pline_num)
+  let l:retv = cindent('.')
+  while l:pline =~# '\(^\s*{\s*\|^\s*//\|^\s*/\*\|\*/\s*$\)'
+    let l:pline_num = prevnonblank(l:pline_num - 1)
+    let l:pline = getline(l:pline_num)
+  endwhile
+  if l:pline =~# '^\s*template.*'
+    let l:retv = 0
+  endif
+  return l:retv
+endfunction
+
+if has("autocmd")
+    autocmd BufEnter *.{cc,cxx,cpp,h,hh,hpp,hxx} setlocal indentexpr=CppNoTemplateIndent()
+endif
 
 "avoid namespace content indent, ref: http://stackoverflow.com/questions/2549019/how-to-avoid-namespace-content-indentation-in-vim
 set cino=N-s
@@ -46,6 +214,7 @@ set clipboard=unnamedplus
 " 在cmdline模式下能从系统剪贴板复制
 cnoremap <S-Insert> <C-R>*
 cnoremap <C-v> <C-R>*
+cnoremap <C-t> tab sb<Enter>
 set go+=a "从vim中能复制到系统剪贴板
 set go+=b "水平滚动条
 map <C-F12> <esc>:!ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .<cr><cr>
@@ -89,9 +258,8 @@ color desert     " 设置背景主题
 if has("gui_macvim")
   set guifont=Monaco:h14
 else
-  "set guifont=Monospace\ 13
-  "set guifont=Monaco\ 18
-  set guifont=Monaco\ 14
+  "set guifont=Monospace\ 18
+  set guifont=Monaco\ 13
 endif
 "autocmd InsertLeave * se nocul  " 用浅色高亮当前行  
 autocmd InsertEnter * se cul    " 用浅色高亮当前行  
@@ -154,6 +322,9 @@ set iskeyword+=_,$,@,%,#,-
 au BufRead,BufNewFile *.{md,mdown,mkd,mkdn,markdown,mdwn}   set filetype=mkd
 au BufRead,BufNewFile *.{go}   set filetype=go
 au BufRead,BufNewFile *.{js}   set filetype=javascript
+"rkdown to HTML  
+"nmap md :!~/.vim/markdown.pl % > %.html <CR><CR>
+"nmap fi :!firefox %.html & <CR><CR>
 nmap \ \cc
 vmap \ \cc
 
@@ -250,6 +421,8 @@ vmap <C-c> "+y
 set mouse=v
 "去空行  
 nnoremap <F2> :g/^\s*$/d<CR> 
+"拷贝当前路径和文件名
+noremap <silent> <F2> :let @*=expand("%:p")<CR>
 "比较文件  
 nnoremap <C-F2> :vert diffsplit 
 "nnoremap <Leader>fu :CtrlPFunky<Cr>
@@ -430,6 +603,9 @@ let Tlist_Exist_OnlyWindow = 1  " 如果只有一个buffer，kill窗口也kill�
 "设置tags  
 set tags=tags;  
 set autochdir 
+" seems `autochdir` not work
+" https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
+autocmd BufEnter * silent! lcd %:p:h
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "其他东东
@@ -500,7 +676,7 @@ let g:indentLine_char = '┊'
 "ndle 'tpope/vim-rails.git'
 " vim-scripts repos
 Bundle 'L9'
-Bundle 'FuzzyFinder'
+"Bundle 'FuzzyFinder'
 " non github repos
 "Bundle 'https://github.com/wincent/command-t.git'
 Bundle 'Shougo/unite.vim'
@@ -512,11 +688,13 @@ Bundle 'Shougo/neoyank.vim'
 Bundle 'Shougo/unite-outline'
 "A source of unite.vim for history of command/search.
 Bundle 'thinca/vim-unite-history'
+Bundle 'devjoe/vim-codequery'
+Bundle 'skwp/greplace.vim'
 "Bundle 'Auto-Pairs'
 Bundle 'extr15/Auto-Pairs'
 Bundle 'python-imports.vim'
 Bundle 'CaptureClipboard'
-Bundle 'ctrlp-modified.vim'
+"Bundle 'ctrlp-modified.vim'
 Bundle 'last_edit_marker.vim'
 Bundle 'synmark.vim'
 "Bundle 'Python-mode-klen'
@@ -527,8 +705,8 @@ Bundle 'synmark.vim'
 "Bundle 'jslint.vim'
 "Bundle "pangloss/vim-javascript"
 Bundle 'Vim-Script-Updater'
-Bundle 'ctrlp.vim'
-Bundle 'tacahiroy/ctrlp-funky'
+"Bundle 'ctrlp.vim'
+"Bundle 'tacahiroy/ctrlp-funky'
 "Bundle 'jsbeautify'
 Bundle 'The-NERD-Commenter'
 Bundle 'fholgado/minibufexpl.vim'
@@ -542,8 +720,10 @@ Bundle 'mhinz/vim-hugefile'
 Bundle 'Konfekt/FastFold'
 Bundle 'octol/vim-cpp-enhanced-highlight'
 Bundle 'rhysd/vim-clang-format'
+Bundle 'airblade/vim-gitgutter'
 
 Bundle 'mileszs/ack.vim'
+Bundle 'inkarkat/vim-mark'
 
 "django
 "Bundle 'django_templates.vim'
@@ -551,6 +731,13 @@ Bundle 'mileszs/ack.vim'
 
 "Bundle 'FredKSchott/CoVim'
 "Bundle 'djangojump'
+Bundle 'iamcco/mathjax-support-for-mkdp'
+Bundle 'iamcco/markdown-preview.vim'
+Bundle 'tpope/vim-repeat'
+Bundle 'tpope/vim-surround'
+Bundle 'majutsushi/tagbar'
+Bundle 'shime/vim-livedown'
+Bundle 'nelstrom/vim-visual-star-search'
 " ...
 let g:html_indent_inctags = "html,body,head,tbody"
 let g:html_indent_script1 = "inc"
@@ -560,15 +747,26 @@ let g:html_indent_style1 = "inc"
 "let g:LatexBox_viewer = "skim "
 "let g:tex_no_math = 1
 
+" tagbar
+let g:tagbar_left = 1
+nnoremap tb :TagbarToggle<CR>
+" markdown-preview
+let g:mkdp_refresh_slow = 0
+" vim-surround. `q` means `quote`, this is for markdown file.
+xmap q <Plug>VSurround`
+:xnoremap S3 <esc>`<O<esc>S```<esc>`>o<esc>S```<esc>k$
+
 "ack.vim, config to use ag
 let g:ackprg = 'ag --vimgrep'
+nnoremap <Leader>a :Ack<Enter>
 
 "unite
 "let g:unite_source_rec_async_command='ag --path-to-ignore /Users/renyong/software/software_git/config/.agignore --nocolor --nogroup --ignore ".hg" --ignore ".svn" --ignore ".git" --ignore ".bzr" --hidden -g ""'
 let g:unite_source_rec_async_command =
     \ ['ag', '-p ~/.agignore', '--follow', '--nogroup', '--nocolor', '--hidden', '-g', '']
 nnoremap <silent> <leader>ug  :<C-u>Unite -ignorecase file_rec/git:--cached:--others:--exclude-standard<CR>
-nnoremap <leader>ur :<C-u>Unite -ignorecase -start-insert file_rec/async<CR>
+"nnoremap <silent> <leader>ug  :<C-u>Unite file_rec/git:--cached:--others:--exclude-standard<CR>
+nnoremap <leader>ur :<C-u>Unite -start-insert -ignorecase file_rec/async<CR>
 nnoremap <leader>uf :<C-u>Unite -ignorecase file<CR>
 nnoremap <silent> <leader>ub :<C-u>Unite -ignorecase buffer bookmark<CR>
 nnoremap <silent><leader>ul :<C-u>Unite -no-quit line<CR>
@@ -610,7 +808,7 @@ noremap <Leader>b :call rtags#JumpBack()<CR>
 noremap <Leader>i :call rtags#SymbolInfo()<CR>
 noremap <Leader>f :call rtags#FindRefs()<CR>
 
-nmap fs :FSHere<CR>
+nmap gs :FSHere<CR>
 
 "重定向命令输出到新窗口
 " http://vim.wikia.com/wiki/Capture_ex_command_output
